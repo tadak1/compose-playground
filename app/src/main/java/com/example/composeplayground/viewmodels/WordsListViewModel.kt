@@ -4,9 +4,10 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
+import kotlin.random.Random
 
 class WordsListViewModel : ViewModel() {
-    private val viewModelState = MutableLiveData<WordsListViewModelState>()
+    private val viewModelState = MutableLiveData(WordsListViewModelState())
     val uiState: LiveData<WordsListUiState> =
         Transformations.map(viewModelState) { viewModelState -> viewModelState.toUiState() }
 
@@ -17,11 +18,9 @@ class WordsListViewModel : ViewModel() {
     fun loadWords() {
         val state = viewModelState.value
         if (state !is WordsListViewModelState) return
-        WordsListViewModelState(
+        viewModelState.value = WordsListViewModelState(
             isLoading = true,
-            words = listOf(
-                "first", "second", "third"
-            ),
+            words = (1..50).map { Random.nextInt().toString() },
             errorMessage = null
         )
     }
@@ -42,29 +41,28 @@ sealed interface WordsListUiState {
     ) : WordsListUiState
 
     data class HasWords(
-        val words: List<String>?,
+        val words: List<String>,
         override val isLoading: Boolean,
         override val errorMessage: String?,
     ) : WordsListUiState
 }
 
 private data class WordsListViewModelState(
-    val isLoading: Boolean,
-    val words: List<String>?,
-    val errorMessage: String?,
+    val isLoading: Boolean = true,
+    val words: List<String> = listOf(),
+    val errorMessage: String? = null,
 ) {
 
     fun toUiState(): WordsListUiState =
-        words?.let {
+        if (words.isEmpty())
             WordsListUiState.NoWords(
                 isLoading = isLoading,
                 errorMessage = errorMessage
             )
-        } ?: run {
+        else
             WordsListUiState.HasWords(
                 words = words,
                 isLoading = isLoading,
                 errorMessage = errorMessage
             )
-        }
 }

@@ -86,4 +86,7 @@ dependencies {
 
     // ViewModel
     implementation "androidx.lifecycle:lifecycle-viewmodel-compose:2.4.0-rc01"
+
+    // UI
+    implementation "com.google.accompanist:accompanist-swiperefresh:0.20.0"
 }

@@ -1,9 +1,8 @@
 package com.example.composeplayground.viewmodels
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.Transformations
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 class WordsListViewModel : ViewModel() {
@@ -12,14 +11,28 @@ class WordsListViewModel : ViewModel() {
         Transformations.map(viewModelState) { viewModelState -> viewModelState.toUiState() }
 
     init {
-        loadWords()
+        viewModelScope.launch {
+            loadWords()
+        }
     }
 
-    fun loadWords() {
+    fun refresh() {
+        viewModelScope.launch {
+            loadWords()
+        }
+    }
+
+    private suspend fun loadWords() {
         val state = viewModelState.value
         if (state !is WordsListViewModelState) return
         viewModelState.value = WordsListViewModelState(
             isLoading = true,
+            words = state.words,
+            errorMessage = null
+        )
+        delay(2000L)
+        viewModelState.value = WordsListViewModelState(
+            isLoading = false,
             words = (1..50).map { Random.nextInt().toString() },
             errorMessage = null
         )

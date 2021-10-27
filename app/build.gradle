@@ -1,8 +1,8 @@
 plugins {
     id 'com.android.application'
     id 'kotlin-android'
+    id 'kotlin-kapt'
     id 'dagger.hilt.android.plugin'
-
 }
 
 android {
@@ -71,6 +71,7 @@ dependencies {
 
     // Hilt Dependency
     implementation "com.google.dagger:hilt-android:$hilt_version"
+    kapt "com.google.dagger:hilt-android-compiler:$hilt_version"
     annotationProcessor "com.google.dagger:hilt-compiler:$hilt_version"
     androidTestImplementation  "com.google.dagger:hilt-android-testing:$hilt_version"
     androidTestAnnotationProcessor "com.google.dagger:hilt-compiler:$hilt_version"
@@ -89,4 +90,7 @@ dependencies {
 
     // UI
     implementation "com.google.accompanist:accompanist-swiperefresh:0.20.0"
+
+    // Logger
+    implementation 'com.jakewharton.timber:timber:5.0.1'
 }

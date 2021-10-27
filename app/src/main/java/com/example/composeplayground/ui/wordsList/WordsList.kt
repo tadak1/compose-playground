@@ -1,14 +1,13 @@
-package com.example.composeplayground.component
+package com.example.composeplayground.ui.wordsList
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -19,30 +18,41 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.composeplayground.R
-import com.example.composeplayground.viewmodels.WordsListUiState
-import com.example.composeplayground.viewmodels.WordsListViewModel
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 
 @Preview
 @Composable
-fun TestWordsListPreview() {
+fun PreviewWordsListPreview() {
     val words: List<String> = listOf("First", "Second")
     val onTap: () -> Unit = {}
     MaterialTheme() {
-//        WordsListLayout(words = words, onTap = onTap)
+        WordsListLayout(words = words, onTap = onTap, isLoading = true)
     }
 }
 
 @Composable
-fun WordsListScreen(viewModel: WordsListViewModel) {
-    val uiState by viewModel.uiState.observeAsState(
+fun WordsListScreen(wordsListViewModel: WordsListViewModel = viewModel()) {
+    val uiState by wordsListViewModel.uiState.observeAsState(
         WordsListUiState.Initial()
     )
 
     Scaffold(
-        Modifier.background(color = colorResource(R.color.md_white_1000))
+        Modifier.background(color = colorResource(R.color.md_white_1000)),
+        topBar = {
+            TopAppBar(
+                title = { Text("AppBar") },
+                navigationIcon = {
+                    IconButton(onClick = {
+
+                    }) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Navigate Back page")
+                    }
+                },
+            )
+        }
     ) {
         val state = uiState
         LoadingContent(
@@ -52,9 +62,9 @@ fun WordsListScreen(viewModel: WordsListViewModel) {
                 is WordsListUiState.HasWords -> false
             },
             onRefresh = {
-                viewModel.refresh()
+                wordsListViewModel.refresh()
             },
-            emptyContent={
+            emptyContent = {
                 FullScreenLoading()
             },
             loading = state.isLoading,
@@ -69,7 +79,7 @@ fun WordsListScreen(viewModel: WordsListViewModel) {
                             isLoading = state.isLoading,
                             words = state.words,
                             onTap = {
-                                viewModel.refresh()
+                                wordsListViewModel.refresh()
                             }
                         )
                     }

@@ -9,7 +9,9 @@ import androidx.compose.material.Surface
 import com.example.composeplayground.component.WordsListScreen
 import com.example.composeplayground.ui.theme.ComposePlaygroundTheme
 import com.example.composeplayground.viewmodels.WordsListViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

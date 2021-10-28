@@ -73,10 +73,12 @@ dependencies {
     implementation "com.google.dagger:hilt-android:$hilt_version"
     kapt "com.google.dagger:hilt-android-compiler:$hilt_version"
     annotationProcessor "com.google.dagger:hilt-compiler:$hilt_version"
-    androidTestImplementation  "com.google.dagger:hilt-android-testing:$hilt_version"
+    androidTestImplementation "com.google.dagger:hilt-android-testing:$hilt_version"
     androidTestAnnotationProcessor "com.google.dagger:hilt-compiler:$hilt_version"
     testImplementation "com.google.dagger:hilt-android-testing:$hilt_version"
     testAnnotationProcessor "com.google.dagger:hilt-compiler:$hilt_version"
+
+    implementation "androidx.hilt:hilt-navigation-compose:1.0.0-alpha03"
 
     // Navigation
     implementation "androidx.navigation:navigation-fragment-ktx:$navigation_version"

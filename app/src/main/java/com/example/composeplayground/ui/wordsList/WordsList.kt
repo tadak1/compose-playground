@@ -18,7 +18,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.composeplayground.R
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
@@ -34,7 +34,9 @@ fun PreviewWordsListPreview() {
 }
 
 @Composable
-fun WordsListScreen(wordsListViewModel: WordsListViewModel = viewModel()) {
+fun WordsListScreen(
+    wordsListViewModel: WordsListViewModel = hiltViewModel()
+) {
     val uiState by wordsListViewModel.uiState.observeAsState(
         WordsListUiState.Initial()
     )
@@ -45,9 +47,7 @@ fun WordsListScreen(wordsListViewModel: WordsListViewModel = viewModel()) {
             TopAppBar(
                 title = { Text("AppBar") },
                 navigationIcon = {
-                    IconButton(onClick = {
-
-                    }) {
+                    IconButton(onClick = {}) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Navigate Back page")
                     }
                 },

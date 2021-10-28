@@ -1,6 +1,7 @@
 package com.example.composeplayground.ui.wordsList
 
 import androidx.lifecycle.*
+import com.example.composeplayground.utilities.Navigator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -11,7 +12,9 @@ import javax.inject.Inject
 import kotlin.random.Random
 
 @HiltViewModel
-class WordsListViewModel @Inject constructor() : ViewModel() {
+class WordsListViewModel @Inject constructor(
+    val navigator: Navigator
+) : ViewModel() {
     private val viewModelState = MutableLiveData(WordsListViewModelState())
     val uiState: LiveData<WordsListUiState> =
         Transformations.map(viewModelState) { viewModelState -> viewModelState.toUiState() }
@@ -27,6 +30,7 @@ class WordsListViewModel @Inject constructor() : ViewModel() {
         viewModelScope.launch {
             loadWords()
         }
+        navigator.navigateTo(Navigator.NavTarget.WordsList)
     }
 
     private suspend fun loadWords() =

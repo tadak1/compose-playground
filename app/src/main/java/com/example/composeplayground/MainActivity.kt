@@ -6,34 +6,70 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.Button
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.composeplayground.ui.theme.ComposePlaygroundTheme
 import com.example.composeplayground.ui.wordsList.WordsListScreen
+import com.example.composeplayground.utilities.Navigator
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var navigator: Navigator
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        LocalNavigator.provides(navigator)
         setContent {
-            ComposePlaygroundTheme(
-                content = @Composable {
-                    val navController = rememberNavController()
-                    NavHost(navController = navController, startDestination = "/") {
+            ComposePlaygroundTheme() {
+                CompositionLocalProvider(LocalNavigator provides navigator) {
+                    NavigationComponent(navigator) {
                         composable("/") {
                             Column() {
-                                Button(onClick = { navController.navigate("/words") }) {
-                                }
+                                Button(onClick = {
+                                    navigator.navigateTo(Navigator.NavTarget.WordsList)
+                                }) {}
                             }
                         }
                         composable("/words") {
-                            WordsListScreen()
+                            WordsListScreen(hiltViewModel())
                         }
                     }
                 }
-            )
+            }
         }
+    }
+}
+
+val LocalNavigator = compositionLocalOf { Navigator() }
+
+@Composable
+fun NavigationComponent(
+    navigator: Navigator,
+    navGraphBuilder: NavGraphBuilder.() -> Unit
+) {
+    val navController = rememberNavController()
+    LaunchedEffect("navigation") {
+        navigator.navigationSharedFlow.onEach {
+            navController.navigate(it.label)
+        }.launchIn(this)
+    }
+
+    NavHost(
+        navController = navController,
+        startDestination = Navigator.NavTarget.Home.label
+    ) {
+        navGraphBuilder()
     }
 }

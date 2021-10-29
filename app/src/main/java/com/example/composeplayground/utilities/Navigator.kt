@@ -2,6 +2,7 @@ package com.example.composeplayground.utilities
 
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -10,6 +11,10 @@ class Navigator @Inject constructor() {
     private val _navigationFlow =
         MutableSharedFlow<NavTarget>(extraBufferCapacity = 1)
     val navigationSharedFlow = _navigationFlow.asSharedFlow()
+
+    init {
+        Timber.tag("Navigator").i("Initialize Navigator")
+    }
 
     fun navigateTo(navTarget: NavTarget) {
         _navigationFlow.tryEmit(navTarget)

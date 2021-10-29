@@ -30,7 +30,6 @@ class WordsListViewModel @Inject constructor(
         viewModelScope.launch {
             loadWords()
         }
-        navigator.navigateTo(Navigator.NavTarget.WordsList)
     }
 
     private suspend fun loadWords() =

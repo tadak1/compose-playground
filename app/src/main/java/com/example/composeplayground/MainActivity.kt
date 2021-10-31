@@ -52,18 +52,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-val LocalNavigator = compositionLocalOf { Navigator() }
-
 @Composable
-fun NavigationComponent(
-    navigator: Navigator,
-    navGraphBuilder: NavGraphBuilder.() -> Unit
-) {
-    val navController = rememberNavController()
-    LaunchedEffect("navigation") {
-        navigator.navigationSharedFlow.onEach {
-            navController.navigate(it.label)
-        }.launchIn(this)
     }
 
     NavHost(

@@ -18,9 +18,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.composeplayground.LocalNavigator
 import com.example.composeplayground.R
-import com.example.composeplayground.utilities.Navigator
+import com.example.composeplayground.ui.components.LocalNavigator
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 
@@ -50,7 +49,7 @@ fun WordsListScreen(
                 title = { Text("AppBar") },
                 navigationIcon = {
                     IconButton(onClick = {
-                        navigator.navigateTo(Navigator.NavTarget.Home)
+                        navigator.navigateHome()
                     }) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Navigate Back page")
                     }

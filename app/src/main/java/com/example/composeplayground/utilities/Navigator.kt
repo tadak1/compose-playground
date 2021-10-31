@@ -1,27 +1,28 @@
 package com.example.composeplayground.utilities
 
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import androidx.navigation.NavController
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class Navigator @Inject constructor() {
-    private val _navigationFlow =
-        MutableSharedFlow<NavTarget>(extraBufferCapacity = 1)
-    val navigationSharedFlow = _navigationFlow.asSharedFlow()
-
+class Navigator constructor(
+    private val navController: NavController
+) {
     init {
         Timber.tag("Navigator").i("Initialize Navigator")
     }
 
-    fun navigateTo(navTarget: NavTarget) {
-        _navigationFlow.tryEmit(navTarget)
+    fun navigateHome() {
+        navController.navigate("/")
     }
 
-    enum class NavTarget(val label: String) {
-        Home("/"),
-        WordsList("/words")
+    fun navigateWords() {
+        navController.navigate("/words")
+    }
+
+    fun navigateVideo() {
+        navController.navigate("/video")
+    }
+
+    fun backToPage() {
+        navController.popBackStack()
     }
 }

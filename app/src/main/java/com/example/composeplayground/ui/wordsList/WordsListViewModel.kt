@@ -1,7 +1,6 @@
 package com.example.composeplayground.ui.wordsList
 
 import androidx.lifecycle.*
-import com.example.composeplayground.utilities.Navigator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -13,7 +12,6 @@ import kotlin.random.Random
 
 @HiltViewModel
 class WordsListViewModel @Inject constructor(
-    val navigator: Navigator
 ) : ViewModel() {
     private val viewModelState = MutableLiveData(WordsListViewModelState())
     val uiState: LiveData<WordsListUiState> =

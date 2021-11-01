@@ -4,8 +4,13 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.view.View
+import android.view.WindowInsets
+import android.view.WindowInsetsController
 import android.widget.ImageButton
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -15,11 +20,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.Button
-import androidx.compose.material.Text
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
@@ -43,6 +50,7 @@ import com.google.android.exoplayer2.ui.PlayerView
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import dagger.hilt.android.AndroidEntryPoint
+import timber.log.Timber
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -143,21 +151,71 @@ fun VideoScreen() {
 
     val activity = LocalContext.current as Activity
     val navigator = LocalNavigator.current
-    Box {
-        AndroidView(
-            factory = { context ->
-                PlayerView(context).apply {
-                    player = exoPlayer
-                    this.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
-                    findViewById<ImageButton>(R.id.exo_fullscreen).setOnClickListener {
-                        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+    val configuration = LocalConfiguration.current
+    val orientation = remember { mutableStateOf(Configuration.ORIENTATION_PORTRAIT) }
+
+    SideEffect {
+        Timber.tag("VideoPage").i("orientation is ${configuration.orientation}")
+        orientation.value = configuration.orientation
+    }
+
+    LaunchedEffect(orientation.value) {
+        if (orientation.value != Configuration.ORIENTATION_LANDSCAPE) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                activity.window.insetsController?.show(WindowInsets.Type.statusBars())
+                activity.window.insetsController?.show(WindowInsets.Type.navigationBars())
+                activity.window.insetsController?.systemBarsBehavior =
+                    WindowInsetsController.BEHAVIOR_DEFAULT
+            } else {
+                activity.actionBar?.show()
+                activity.window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+            }
+            return@LaunchedEffect
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            activity.window.insetsController?.hide(WindowInsets.Type.statusBars())
+            activity.window.insetsController?.hide(WindowInsets.Type.navigationBars())
+            activity.window.insetsController?.systemBarsBehavior =
+                WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        } else {
+            activity.actionBar?.hide()
+            activity.window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            if (orientation.value != Configuration.ORIENTATION_LANDSCAPE) {
+                TopAppBar(
+                    title = { Text("AppBar") },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            navigator.navigateHome()
+                        }) {
+                            Icon(Icons.Filled.ArrowBack, contentDescription = "Navigate Back page")
+                        }
+                    },
+                )
+            }
+        }
+    ) {
+        Box {
+            AndroidView(
+                factory = { context ->
+                    PlayerView(context).apply {
+                        player = exoPlayer
+                        this.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
+                        findViewById<ImageButton>(R.id.exo_fullscreen).setOnClickListener {
+                            activity.requestedOrientation =
+                                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                        }
                     }
                 }
+            )
+            BackHandler(enabled = true) {
+                activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+                navigator.backToPage()
             }
-        )
-        BackHandler(enabled = true) {
-            activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-            navigator.backToPage()
         }
     }
 }

@@ -115,7 +115,7 @@ fun VideoScreen() {
                 Util.getUserAgent(context, context.packageName)
             )
             val url =
-                "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+                "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
             val source = ProgressiveMediaSource.Factory(dataSourceFactory)
                 .createMediaSource(MediaItem.fromUri(Uri.parse(url)))
             setMediaSource(source)

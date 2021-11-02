@@ -1,21 +1,14 @@
 package com.example.composeplayground
 
 import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.view.View
-import android.view.WindowInsets
-import android.view.WindowInsetsController
 import android.widget.ImageButton
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,8 +25,7 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -41,6 +33,8 @@ import com.example.composeplayground.ui.components.LocalNavigator
 import com.example.composeplayground.ui.components.NavigationComponent
 import com.example.composeplayground.ui.theme.ComposePlaygroundTheme
 import com.example.composeplayground.ui.wordsList.WordsListScreen
+import com.example.composeplayground.utilities.SystemStatusBarController
+import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
@@ -50,7 +44,11 @@ import com.google.android.exoplayer2.ui.PlayerView
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -91,7 +89,8 @@ class MainActivity : ComponentActivity() {
                             WordsListScreen(hiltViewModel())
                         }
                         composable("/video") {
-                            VideoScreen()
+                            val videoPlayerViewModel: VideoPlayerViewModel = hiltViewModel()
+                            VideoScreen(videoPlayerViewModel)
                         }
                     }
                 }
@@ -100,14 +99,51 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+
+@HiltViewModel
+class VideoPlayerViewModel @Inject constructor(
+) : ViewModel() {
+    private val _currentPositionFlow = MutableStateFlow<Long>(value = 0)
+    val currentPositionFlow: StateFlow<Long> = _currentPositionFlow
+
+
+    fun updateLastPosition(position: Long) {
+        viewModelScope.launch {
+            _currentPositionFlow.emit(position)
+        }
+    }
+}
+
 @Composable
-fun VideoScreen() {
+fun currentPosition(currentPositionFlow: SharedFlow<Long>): State<Long> {
+    val lifeCycleOwner = LocalLifecycleOwner.current
+    return produceState(initialValue = 0L) {
+        lifeCycleOwner.lifecycleScope.launch {
+            lifeCycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                currentPositionFlow.collect {
+                    Timber.tag("currentPosition").i("current position flow: $it")
+                    value = it
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun VideoScreen(
+    videoPlayerViewModel: VideoPlayerViewModel,
+) {
+
     val context = LocalContext.current
     val exoPlayer = remember {
         SimpleExoPlayer.Builder(context).build().apply {
             repeatMode = Player.REPEAT_MODE_ALL
         }
     }
+    val currentPosition by videoPlayerViewModel.currentPositionFlow.collectAsState(initial = 0)
+    val lifecycleOwner by rememberUpdatedState(LocalLifecycleOwner.current)
+    val scope = rememberCoroutineScope()
+
     LaunchedEffect(true) {
         exoPlayer.apply {
             val dataSourceFactory = DefaultDataSourceFactory(
@@ -119,13 +155,12 @@ fun VideoScreen() {
             val source = ProgressiveMediaSource.Factory(dataSourceFactory)
                 .createMediaSource(MediaItem.fromUri(Uri.parse(url)))
             setMediaSource(source)
+            seekTo(currentPosition)
             prepare()
             playWhenReady = true
         }
     }
-
-    val lifecycleOwner by rememberUpdatedState(LocalLifecycleOwner.current)
-    DisposableEffect(lifecycleOwner) {
+    DisposableEffect(lifecycleOwner, scope) {
         val lifecycle = lifecycleOwner.lifecycle
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
@@ -136,12 +171,14 @@ fun VideoScreen() {
                     exoPlayer.playWhenReady = true
                 }
                 Lifecycle.Event.ON_DESTROY -> {
+                    videoPlayerViewModel.updateLastPosition(exoPlayer.currentPosition)
                     exoPlayer.run {
                         stop()
                         release()
                     }
                 }
             }
+
         }
         lifecycle.addObserver(observer)
         onDispose {
@@ -149,16 +186,24 @@ fun VideoScreen() {
         }
     }
 
+    VideoPlayer(exoPlayer = exoPlayer)
+}
+
+
+@Composable
+fun VideoPlayer(exoPlayer: ExoPlayer) {
     val activity = LocalContext.current as Activity
+    val statusController = SystemStatusBarController(activity = activity)
     val navigator = LocalNavigator.current
     val configuration = LocalConfiguration.current
     val orientation = remember { mutableStateOf(Configuration.ORIENTATION_PORTRAIT) }
 
     SideEffect {
-        Timber.tag("VideoPage").i("orientation is ${configuration.orientation}")
         orientation.value = configuration.orientation
     }
 
+    // StatusBarのコントロールを意図的にDelayします。
+    // requestOrientationとhideStatusが正しく動作しないため
     LaunchedEffect(orientation.value) {
         if (orientation.value != Configuration.ORIENTATION_LANDSCAPE) {
             statusController.showStatusBar()
@@ -202,15 +247,4 @@ fun VideoScreen() {
             }
         }
     }
-}
-
-fun Context.getActivity(): AppCompatActivity? {
-    var currentContext = this
-    while (currentContext is ContextWrapper) {
-        if (currentContext is AppCompatActivity) {
-            return currentContext
-        }
-        currentContext = currentContext.baseContext
-    }
-    return null
 }

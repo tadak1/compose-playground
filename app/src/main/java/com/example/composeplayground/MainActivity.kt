@@ -31,6 +31,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.composeplayground.ui.components.LocalNavigator
 import com.example.composeplayground.ui.components.NavigationComponent
+import com.example.composeplayground.ui.handler.OrientationEventHandler
 import com.example.composeplayground.ui.theme.ComposePlaygroundTheme
 import com.example.composeplayground.ui.wordsList.WordsListScreen
 import com.example.composeplayground.utilities.SystemStatusBarController
@@ -45,10 +46,13 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -99,13 +103,10 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
 @HiltViewModel
-class VideoPlayerViewModel @Inject constructor(
-) : ViewModel() {
+class VideoPlayerViewModel @Inject constructor() : ViewModel() {
     private val _currentPositionFlow = MutableStateFlow<Long>(value = 0)
     val currentPositionFlow: StateFlow<Long> = _currentPositionFlow
-
 
     fun updateLastPosition(position: Long) {
         viewModelScope.launch {
@@ -178,7 +179,6 @@ fun VideoScreen(
                     }
                 }
             }
-
         }
         lifecycle.addObserver(observer)
         onDispose {
@@ -189,32 +189,16 @@ fun VideoScreen(
     VideoPlayer(exoPlayer = exoPlayer)
 }
 
-
 @Composable
 fun VideoPlayer(exoPlayer: ExoPlayer) {
     val activity = LocalContext.current as Activity
     val statusController = SystemStatusBarController(activity = activity)
     val navigator = LocalNavigator.current
     val configuration = LocalConfiguration.current
-    val orientation = remember { mutableStateOf(Configuration.ORIENTATION_PORTRAIT) }
-
-    SideEffect {
-        orientation.value = configuration.orientation
-    }
-
-    // StatusBarのコントロールを意図的にDelayします。
-    // requestOrientationとhideStatusが正しく動作しないため
-    LaunchedEffect(orientation.value) {
-        if (orientation.value != Configuration.ORIENTATION_LANDSCAPE) {
-            statusController.showStatusBar()
-            return@LaunchedEffect
-        }
-        statusController.hideStatusBar()
-    }
 
     Scaffold(
         topBar = {
-            if (orientation.value != Configuration.ORIENTATION_LANDSCAPE) {
+            if (configuration.orientation != Configuration.ORIENTATION_LANDSCAPE) {
                 TopAppBar(
                     title = { Text("AppBar") },
                     navigationIcon = {
@@ -241,10 +225,19 @@ fun VideoPlayer(exoPlayer: ExoPlayer) {
                     }
                 }
             )
-            BackHandler(enabled = true) {
-                activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-                navigator.backToPage()
+        }
+        OrientationEventHandler(
+            onOrientationChange = { orientation ->
+                if (orientation != Configuration.ORIENTATION_LANDSCAPE) {
+                    statusController.showStatusBar()
+                } else {
+                    statusController.hideStatusBar()
+                }
             }
+        )
+        BackHandler(enabled = true) {
+            activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            navigator.backToPage()
         }
     }
 }
